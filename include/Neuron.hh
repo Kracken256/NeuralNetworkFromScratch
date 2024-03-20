@@ -15,6 +15,10 @@ namespace nnfs
     public:
         virtual ~INeuron() = default;
 
+        /// @brief Returns the neuron value
+        /// @return The neuron value
+        virtual float GetValue() const = 0;
+
         /// @brief Returns the activation value
         /// @return The activation value
         virtual float GetActivation() const = 0;
@@ -32,11 +36,14 @@ namespace nnfs
 
         /// @brief Dump the neuron state in JSON format
         virtual void DumpJson(std::ostream &os) const = 0;
+
+        virtual bool operator==(const INeuron &n) const = 0;
     };
 
     template <float (*A)(float), float (*D)(float)>
     class Neuron : public INeuron
     {
+        float m_value;
         float m_activation;
         float m_derived;
 
@@ -45,10 +52,12 @@ namespace nnfs
 
         inline Neuron(float value)
         {
-            m_activation = A(value);
+            m_value = value;
+            m_activation = A(m_value);
             m_derived = D(m_activation);
         }
 
+        inline float GetValue() const override { return m_value; }
         inline float GetActivation() const override { return m_activation; }
         inline float GetDerived() const override { return m_derived; }
 
@@ -58,7 +67,14 @@ namespace nnfs
 
         inline void DumpJson(std::ostream &os) const override
         {
-            os << "{\"a\":" << m_activation << ",\"d\":" << m_derived << "}";
+            os << "{\"v\":" << m_value << ",\"a\":" << m_activation << ",\"d\":" << m_derived << "}";
+        }
+
+        inline bool operator==(const INeuron &n) const override
+        {
+            constexpr auto epsilon = 0.0001f;
+
+            return (m_value - n.GetValue()) < epsilon;
         }
     };
 
