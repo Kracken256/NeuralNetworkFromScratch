@@ -3,6 +3,8 @@
 
 #include <functional>
 #include <iostream>
+#include <memory>
+#include <map>
 
 namespace nnfs
 {
@@ -38,6 +40,77 @@ namespace nnfs
         virtual void DumpJson(std::ostream &os) const = 0;
 
         virtual bool operator==(const INeuron &n) const = 0;
+    };
+
+    class IInit
+    {
+    public:
+        virtual ~IInit() = default;
+        virtual float operator()(int idx) const = 0;
+    };
+
+    class InitZero : public IInit
+    {
+    public:
+        inline static InitZero &Get(int idx = 0)
+        {
+            (void)idx;
+            (void)idx;
+            static InitZero i;
+            return i;
+        }
+        inline float operator()(int idx) const
+        {
+            return 0.0f;
+            (void)idx;
+        }
+    };
+
+    class ConstantInit : public IInit
+    {
+        float m_value;
+        static std::map<float, std::unique_ptr<ConstantInit>> m_cache;
+        inline ConstantInit(float value) : m_value(value) {}
+
+    public:
+        inline static ConstantInit &Get(float value)
+        {
+            if (m_cache.find(value) == m_cache.end())
+                m_cache[value] = std::unique_ptr<ConstantInit>(new ConstantInit(value));
+            return *m_cache[value];
+        }
+        inline float operator()(int idx) const override
+        {
+            return m_value;
+            (void)idx;
+        }
+    };
+
+    class UniformInit : public IInit
+    {
+        float m_min;
+        float m_max;
+
+        static std::map<std::pair<float, float>, std::unique_ptr<UniformInit>> m_cache;
+
+        inline UniformInit(float min, float max) : m_min(min), m_max(max) {}
+
+    public:
+        inline static UniformInit &Get(float min, float max)
+        {
+            auto key = std::make_pair(min, max);
+            if (m_cache.find(key) == m_cache.end())
+            {
+                m_cache[key] = std::unique_ptr<UniformInit>(new UniformInit(min, max));
+            }
+            return *m_cache[key];
+        }
+
+        inline float operator()(int idx) const override
+        {
+            (void)idx;
+            return m_min + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (m_max - m_min)));
+        }
     };
 
     template <float (*A)(float), float (*D)(float)>
@@ -105,7 +178,7 @@ namespace nnfs
 
 namespace std
 {
-    ostream &operator<<(ostream &os, const nnfs::INeuron &n)
+    inline ostream &operator<<(ostream &os, const nnfs::INeuron &n)
     {
         n.DumpJson(os);
         return os;

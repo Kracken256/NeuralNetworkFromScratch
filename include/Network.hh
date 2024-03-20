@@ -17,20 +17,20 @@ namespace nnfs
         Network &operator=(const Network &) = delete;
 
         template <typename NeuronType>
-        static std::unique_ptr<Network> create(std::vector<uint32_t> topology, float defaultValue = 0.0f)
+        static std::unique_ptr<Network> create(std::vector<uint32_t> topology, IInit &init = InitZero::Get())
         {
             auto network = std::make_unique<Network>();
             for (size_t i = 0; i < topology.size(); i++)
             {
-                network->AddLayer<NeuronType>(topology[i], defaultValue);
+                network->AddLayer<NeuronType>(topology[i], init);
             }
             return network;
         }
 
         template <typename NeuronType>
-        inline void AddLayer(uint32_t size, float defaultValue = 0.0f)
+        inline void AddLayer(uint32_t size, IInit &init = InitZero::Get())
         {
-            m_layers.push_back(Layer::create<NeuronType>(size, defaultValue));
+            m_layers.push_back(Layer::create<NeuronType>(size, init));
         }
 
         inline void DumpJson(std::ostream &os) const
@@ -59,7 +59,7 @@ namespace nnfs
 
         inline size_t size() const { return m_layers.size(); }
 
-        bool operator==(const Network &other) const
+        inline bool operator==(const Network &other) const
         {
             if (m_layers.size() != other.m_layers.size())
             {
@@ -80,7 +80,7 @@ namespace nnfs
 
     class DNANetworkSerializer
     {
-        static void FloatToDNA(float value, std::ostream &os)
+        inline static void FloatToDNA(float value, std::ostream &os)
         {
             union
             {
@@ -102,7 +102,7 @@ namespace nnfs
             }
         }
 
-        static bool DNAToFloat(float &value, std::istream &is)
+        inline static bool DNAToFloat(float &value, std::istream &is)
         {
             std::string nucleotides = "ACGT";
 
@@ -154,7 +154,7 @@ namespace nnfs
         }
 
         template <typename Neuron>
-        static bool Deserialize(Network &network, std::istream &is)
+        inline static bool Deserialize(Network &network, std::istream &is)
         {
             char c[3];
             size_t l = 0;
@@ -211,7 +211,7 @@ namespace nnfs
 
 namespace std
 {
-    ostream &operator<<(ostream &os, const nnfs::Network &n)
+    inline ostream &operator<<(ostream &os, const nnfs::Network &n)
     {
         n.DumpJson(os);
         return os;

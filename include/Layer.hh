@@ -15,17 +15,23 @@ namespace nnfs
         Layer() = default;
 
         template <typename NeuronType>
-        static std::unique_ptr<Layer> create(uint32_t size, float defaultValue = 0.0f)
+        inline static std::unique_ptr<Layer> create(uint32_t size, IInit &init = InitZero::Get())
         {
             auto layer = std::make_unique<Layer>();
             for (uint32_t i = 0; i < size; i++)
-                layer->AddNeuron<NeuronType>(defaultValue);
+                layer->AddNeuron<NeuronType>(init(i));
 
             return layer;
         }
 
         Layer(const Layer &) = delete;
         Layer &operator=(const Layer &) = delete;
+
+        template <typename NeuronType>
+        inline void AddNeuron(IInit &i)
+        {
+            m_neurons.push_back(std::make_unique<NeuronType>(i(m_neurons.size())));
+        }
 
         template <typename NeuronType>
         inline void AddNeuron(float value)
@@ -59,7 +65,7 @@ namespace nnfs
 
         inline size_t size() const { return m_neurons.size(); }
 
-        bool operator==(const Layer &other) const
+        inline bool operator==(const Layer &other) const
         {
             if (m_neurons.size() != other.m_neurons.size())
                 return false;
