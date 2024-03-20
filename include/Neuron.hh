@@ -15,8 +15,6 @@ namespace nnfs
     class INeuron
     {
     public:
-        virtual ~INeuron() = default;
-
         /// @brief Returns the neuron value
         /// @return The neuron value
         virtual float GetValue() const = 0;
@@ -45,7 +43,6 @@ namespace nnfs
     class IInit
     {
     public:
-        virtual ~IInit() = default;
         virtual float operator()(int idx) const = 0;
     };
 
